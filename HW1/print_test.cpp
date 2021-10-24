@@ -19,7 +19,9 @@ int main()
 	ss >> a >> b >> c;
 	cout << a << " " << b << " " << c << "\n";
 	if(c == "") cout << "!@#\n";*/
-	
+	string a = "";
+	cin >> a;
+	cout << a.length() << "\n";
 	
 	return 0;
 }

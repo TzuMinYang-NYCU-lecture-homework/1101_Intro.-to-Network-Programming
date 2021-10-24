@@ -1,0 +1,151 @@
+register
+
+register Toyz 420420
+
+register Toyz 420420
+
+login
+
+login Toyz
+
+login Toyz 000000
+
+login Tom 420420
+
+login Toyz 420420
+
+login Toyz 420420
+
+whoami
+
+logout
+
+logout
+
+whoami
+
+register Godtone 777777
+
+list-user
+
+exit
+
+
+
+register Liang 555555
+
+send
+
+send Godtone "Hello! my dog."
+
+login Toyz 420420
+
+send nobody "Hello! my dog"
+
+send Godtone "Hello! my dog"
+
+send Godtone "(licking lips)"
+
+logout
+
+login Liang 555555
+
+list-msg
+
+send Godtone "where is my 50000?"
+
+logout
+
+login Godtone 777777
+
+receive nobody
+
+list-msg
+
+receive Toyz
+
+list-msg
+
+send Toyz "I'm your drug detection dog"
+
+logout
+
+exit
+
+
+********************************
+** Welcome to the BBS server. **
+********************************
+% register
+Usage: register <username> <password>
+% register Toyz 420420
+Register successfully.
+% register Toyz 420420
+Username is already used.
+% login
+Usage: login <username> <password>
+% login Toyz
+Usage: login <username> <password>
+% login Toyz 000000
+Login failed.
+% login Tom 420420
+Login failed.
+% login Toyz 420420
+Welcome, Toyz.
+% login Toyz 420420
+Please logout first.
+% whoami
+Toyz
+% logout
+Bye, Toyz.
+% logout
+Please login first.
+% whoami
+Please login first.
+% register Godtone 777777
+Register successfully.
+% list-user
+Godtone
+Toyz
+% exit
+
+********************************
+** Welcome to the BBS server. **
+********************************
+% register Liang 555555
+Register successfully.
+% send
+Usage: send <username> <message>
+% send Godtone "Hello! my dog."
+Please login first.
+% login Toyz 420420
+Welcome, Toyz.
+% send nobody "Hello! my dog"
+User not existed.
+% send Godtone "Hello! my dog"
+% send Godtone "(licking lips)"
+% logout
+Bye, Toyz.
+% login Liang 555555
+Welcome, Liang.
+% list-msg
+Your message box is empty.
+% send Godtone "where is my 50000?"
+% logout
+Bye, Liang.
+% login Godtone 777777
+Welcome, Godtone.
+% receive nobody
+User not existed.
+% list-msg
+1 message from Liang.
+2 message from Toyz.
+% receive Toyz
+Hello! my dog
+% list-msg
+1 message from Liang.
+1 message from Toyz.
+% send Toyz "I'm your drug detection dog"
+% logout
+Bye, Godtone.
+% exit
