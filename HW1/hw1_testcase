@@ -13,6 +13,7 @@ logout
 whoami
 register Godtone 777777
 list-user
+exits
 register Liang 555555
 send
 send Godtone "Hello! my dog."

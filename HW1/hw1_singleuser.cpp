@@ -7,7 +7,6 @@
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <sys/select.h>
 
 #define LISTENQ 1024
 #define MAXLINE 4095
@@ -47,10 +46,8 @@ public:
 
         listen(listenfd, LISTENQ);  //LISTENQ是backlog的大小
 
-        char input_buffer[100000];
+        char input_buffer[MAXLINE + 100];
         bzero(input_buffer, sizeof(input_buffer));
-
-        string str_input_buffer = "";
 
         while(1)
         {
@@ -69,14 +66,20 @@ public:
 
                 // 發現如果在comman line用輸入的,單行最多只能讀4096(含換行)個字元,疑似和OS的IO buffer有關
                 // 用file IO就不會有這個問題,但會有連線太快關掉而收不到server訊息的問題
-                if(str_input_buffer.find('\n') != std::string::npos)    //若出現換行,i.e.,讀完一次輸入
+                while(str_input_buffer.find('\n') != std::string::npos)     //若出現換行,i.e.,讀完一次輸入,用while是因為讀檔的話read會一次讀很多近來
                 {
-                    action(str_input_buffer);
+                    //執行換行前的指令
+                    action(str_input_buffer.substr(0, str_input_buffer.find('\n') + 1));
 
                     output_buffer = "% ";
                     writen(connectfd, output_buffer.c_str(), output_buffer.length());
 
-                    str_input_buffer = "";
+                    //留下換行後的
+                    if(str_input_buffer.find('\n') != str_input_buffer.length() - 1)
+                        str_input_buffer = str_input_buffer.substr(str_input_buffer.find('\n') + 1);
+                    else
+                        str_input_buffer = "";
+
                 }
             }
             
@@ -94,7 +97,7 @@ private:
     socklen_t cli_len;
     struct sockaddr_in servaddr, cliaddr;
 
-    string output_buffer;
+    string output_buffer, str_input_buffer = "";;
 
     ssize_t	writen(int fd, const char *vptr, size_t n)  /* Write "n" bytes to a descriptor. */
     {
@@ -133,8 +136,7 @@ private:
         else if (instr == "send")
         {
             if(arg2 != "") arg2 = input.substr(input.find(arg2));
-            if(arg2.length() >= 3) arg2 = arg2.substr(1, arg2.length() - 3);
-            Send(arg1, arg2);//send 123 ""不知道要不要算錯
+            Send(arg1, arg2);
         }
         else if (instr == "list-msg") List_msg();
         else if (instr == "receive") Receive(arg1);
@@ -148,7 +150,7 @@ private:
             writen(connectfd, output_buffer.c_str(), output_buffer.length());
         }
         
-        else if(find(register_user.begin(), register_user.end(), username) != register_user.end())  //已註冊的使用者
+        else if(find(register_user.begin(), register_user.end(), username) != register_user.end())  //使用者已註冊又要註冊
         {
             output_buffer = "Username is already used.\n";
             writen(connectfd, output_buffer.c_str(), output_buffer.length());
@@ -246,18 +248,24 @@ private:
             writen(connectfd, output_buffer.c_str(), output_buffer.length());
         }
 
-        close(connectfd);//這樣client要再輸入一次才會發現,不知道這樣能不能
+        close(connectfd);   //用nc連線的話,client要再輸入一次才會發現斷線,telnet則會exit後就馬上發現斷線
+        str_input_buffer = "";
     }
 
-    void Send(string receiver_username, string content)
+    void Send(string receiver_username, string content)     //允許寄空的訊息,e.g.send 123 ""
     {
         if(receiver_username == "" || content == "")    //參數過少
         {
             output_buffer = "Usage: send <username> <message>\n";
             writen(connectfd, output_buffer.c_str(), output_buffer.length());
+
+            return;
         }
+
+        if(content.length() >= 3)   // 去除""
+            content = content.substr(1, content.length() - 3);    
         
-        else if(!client[connectfd].is_loggin)   //還沒登入就想send
+        if(!client[connectfd].is_loggin)   //還沒登入就想send
         {
             output_buffer = "Please login first.\n";
             writen(connectfd, output_buffer.c_str(), output_buffer.length());
