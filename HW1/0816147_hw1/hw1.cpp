@@ -94,7 +94,7 @@ public:
         char char_input_buffer[MAXLINE + 100];
         bzero(char_input_buffer, sizeof(char_input_buffer));
         
-        if(read(current_client_fd, char_input_buffer, MAXLINE) <= 0)
+        if(read(current_client_fd, char_input_buffer, MAXLINE) < 0)
         {
             close(current_client_fd);
             client.erase(current_client_fd);
