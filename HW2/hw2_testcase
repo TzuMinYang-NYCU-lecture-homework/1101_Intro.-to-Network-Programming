@@ -1,0 +1,34 @@
+create-board LoL
+register Maoan 123456
+register Toyz 420420
+login Maoan 123456
+create-board LoL
+create-board LoL
+create-board 3Q
+create-board Meta
+list-board
+create-post Gamble --title About My Dream --content Chances are high<br>Sylas or Orianna
+create-post LoL --title About My Dream --content Chances are high<br>Sylas or Orianna
+create-post LoL --title R: About My Dream --content Hey!<br>Don't buy too much!
+list-post Rescue_3Q
+list-post LoL
+read 100
+read 1
+update-post 100 --title This is BYG. We got his smartphone. 
+update-post 1 --title This is BYG. We got his smartphone.
+read 1
+logout
+login Toyz 420420
+update-post 1 --content To win the championship, BYG can hire me from prison.
+delete-post 1
+comment 100 To win the championship, BYG can hire me from prison.
+comment 1 To win the championship, BYG can hire me from prison.
+read 1
+create-board Drug
+list-board
+logout
+login Maoan 123456
+delete-post 1
+read 1
+logout
+exit

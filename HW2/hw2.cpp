@@ -13,10 +13,22 @@
 
 using namespace std;
 
-struct message
+struct board
 {
-    vector<string> content;
-    int first_msg = 0;
+    int index = -1;
+    string name = "", moderator = "";
+};
+
+struct comment
+{
+    string author = "", content = "";
+};
+
+struct post
+{
+    int sn = -1;
+    string title = "", content = "", author = "", date = "", belong_board = "";
+    vector<comment> comments;
 };
 
 struct client_state
@@ -28,8 +40,6 @@ struct client_state
 class BBS_Server
 {
 public:
-
-    int SERV_PORT = 0;
 
     BBS_Server(int SERV_PORT) { this->SERV_PORT = SERV_PORT; }
 
@@ -66,10 +76,13 @@ public:
 
                 socklen_t cli_len = sizeof(cliaddr);
                 new_cli_fd = accept(listenfd, (sockaddr *) &cliaddr, &cli_len);
+
+                FILE* new_cli_fp = fdopen(new_cli_fd, "r+");
                 client[new_cli_fd] = {"", "", false};
 
                 output_buffer = "********************************\n** Welcome to the BBS server. **\n********************************\n% ";
                 writen(new_cli_fd, output_buffer.c_str(), output_buffer.length());
+                //fprintf(new_cli_fp, "********************************\n** Welcome to the BBS server. **\n********************************\n% ");
 
                 FD_SET(new_cli_fd, &all_set);
                 if(new_cli_fd > max_fd) max_fd = new_cli_fd;
@@ -77,7 +90,6 @@ public:
 
             for(int i = 0; i <= max_fd; i++)
             {
-                
                 if(FD_ISSET(i, &rset) && client.count(i) != 0)
                 {
                     ready_sock_num--;
@@ -89,11 +101,59 @@ public:
 
     }
 
+private:
+
+    //網路的
+    int SERV_PORT = 0;
+    fd_set rset, all_set;
+    int current_client_fd = -1;
+    FILE* current_client_fp = NULL;
+
+    //BBS的
+    vector<string> register_user;
+    map<string, string> user_password;
+    map<int, client_state> client;
+
+    int post_sn = 0;
+    int board_index = 0;
+    vector<string> created_board;
+    map<string, board> board_satus;
+    map<int, post> post_status;
+
+    string output_buffer, input_buffer;
+
+    ssize_t	writen(int fd, const char *vptr, size_t n)  /* Write "n" bytes to a descriptor. */
+    {
+        size_t		nleft;
+        ssize_t		nwritten;
+        const char	*ptr;
+
+        ptr = vptr;
+        nleft = n;
+        while (nleft > 0) {
+            if ( (nwritten = write(fd, ptr, nleft)) <= 0) {
+                if (nwritten < 0 && errno == EINTR)
+                    nwritten = 0;		/* and call write() again */
+                else
+                    return(-1);			/* error */
+            }
+
+            nleft -= nwritten;
+            ptr   += nwritten;
+        }
+        return(n);
+    }
+
     void client_reaction()
     {
         char char_input_buffer[MAXLINE + 100];
         bzero(char_input_buffer, sizeof(char_input_buffer));
         
+        //current_client_fp = fdopen(current_client_fd, "r+");////////////////// 要改
+        
+        //if(read(current_client_fd, char_input_buffer, MAXLINE) <= 0)
+        //if(fgets(input_buffer, MAXLINE, current_client_fp) != EOF)
+
         if(read(current_client_fd, char_input_buffer, MAXLINE) <= 0)
         {
             close(current_client_fd);
@@ -128,40 +188,6 @@ public:
     
     }
 
-private:
-
-    vector<string> register_user;
-    map<string, string> user_password;
-    map<string, map<string, message> > receive_message;
-    map<int, client_state> client;
-
-    int current_client_fd = -1;
-    string output_buffer;
-
-    fd_set rset, all_set;
-
-    ssize_t	writen(int fd, const char *vptr, size_t n)  /* Write "n" bytes to a descriptor. */
-    {
-        size_t		nleft;
-        ssize_t		nwritten;
-        const char	*ptr;
-
-        ptr = vptr;
-        nleft = n;
-        while (nleft > 0) {
-            if ( (nwritten = write(fd, ptr, nleft)) <= 0) {
-                if (nwritten < 0 && errno == EINTR)
-                    nwritten = 0;		/* and call write() again */
-                else
-                    return(-1);			/* error */
-            }
-
-            nleft -= nwritten;
-            ptr   += nwritten;
-        }
-        return(n);
-    }
-
     void action(string input)
     {
         stringstream ss(input);
@@ -169,18 +195,64 @@ private:
         ss >> instr >> arg1 >> arg2;
         
         if(instr == "register") Register(arg1, arg2);
-        else if (instr == "login") Login(arg1, arg2);
-        else if (instr == "logout") Logout();
-        else if (instr == "whoami") Whoami();
-        else if (instr == "list-user") List_user();
-        else if (instr == "exit") Exit();
-        else if (instr == "send")
+        else if(instr == "login") Login(arg1, arg2);
+        else if(instr == "logout") Logout();
+        else if(instr == "exit") Exit();
+        else if(instr == "create-board") Creat_board(arg1);
+        else if(instr == "create-post")
         {
-            if(arg2 != "") arg2 = input.substr(input.find(arg2));
-            Send(arg1, arg2);
+            string title = "", content = "";
+            int title_pos = input.find("--title"), content_pos = input.find("--content");
+            if(title_pos == std::string::npos || content_pos == std::string::npos)
+                Create_post(arg1, title, content);
+
+            else if(arg2 == "--title")
+            {
+                title = input.substr(title_pos + 7 + 1, content_pos - (title_pos + 7 + 1));
+                content = input.substr(content_pos + 9 + 1);
+                while(content.find("<br>") != std::string::npos) 
+                    content.replace(content.find("<br>"), 4, "\n");
+                content += "\n";    //最後補一個\n給它
+
+                Create_post(arg1, title, content);
+            }
+
+            else if(arg2 == "--content")
+            {
+                content = input.substr(content_pos + 9 + 1, title_pos - (content_pos + 9 + 1));
+                while(content.find("<br>") != std::string::npos) 
+                    content.replace(content.find("<br>"), 4, "\n");
+                title = input.substr(title_pos + 7 + 1, input.length() - (title_pos + 7 + 1) - 1); //不要連最後的\n都放進去
+
+                Create_post(arg1, title, content);
+            }
+            //可能有問題
         }
-        else if (instr == "list-msg") List_msg();
-        else if (instr == "receive") Receive(arg1);
+        else if(instr == "list-board") List_board();
+        else if(instr == "list-post") List_post(arg1);
+        else if(instr == "read") Read(strtol(arg1.c_str(), NULL, 10));  //不確定
+        else if(instr == "delete-post") Delete_post(strtol(arg1.c_str(), NULL, 10)); //不確定
+        else if(instr == "update-post")
+        {
+            string title = "", content = "";
+            if(arg2 == "") Update_post(strtol(arg1.c_str(), NULL, 10), arg2, "");
+
+            else if(arg2 == "--title")
+            {
+                title = input.substr(input.find("--title") + 7 + 1);
+                Update_post(strtol(arg1.c_str(), NULL, 10), arg2, title);
+            }
+
+            else if(arg2 == "--content")
+            {
+                content = input.substr(input.find("--content") + 9 + 1);
+                while(content.find("<br>") != std::string::npos) 
+                    content.replace(content.find("<br>"), 4, "\n");
+
+                Update_post(strtol(arg1.c_str(), NULL, 10), arg2, content);
+            }
+        }
+        else if(instr == "comment") Comment(strtol(arg1.c_str(), NULL, 10), input.substr(input.find(arg2))) ;
     }
 
     void Register(string username, string password)
@@ -258,30 +330,6 @@ private:
         }
     }
 
-    void Whoami()
-    {
-        if(!client[current_client_fd].is_loggin)    //還沒登入就問自己是誰
-        {
-            output_buffer = "Please login first.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
-
-        else
-        {
-            output_buffer = client[current_client_fd].current_user + "\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
-    }
-
-    void List_user()
-    {
-        output_buffer = "";
-
-        sort(register_user.begin(), register_user.end());   //把user照字母順序排序
-        for(auto iter = register_user.begin(); iter != register_user.end(); iter++)
-            output_buffer += *iter + "\n";
-        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-    }
     void Exit()
     {
         if(client[current_client_fd].is_loggin)     //若已登入要exit就先跟他說Bye
@@ -296,89 +344,152 @@ private:
         FD_CLR(current_client_fd, &all_set);
     }
 
-    void Send(string receiver_username, string content)     //允許寄空的訊息,e.g.send 123 ""
+    void Creat_board(string boardname)
     {
-        if(receiver_username == "" || content == "")    //參數過少
-        {
-            output_buffer = "Usage: send <username> <message>\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+        if(boardname == "") //參數過少
+        ;
 
-            return;
-        }
+        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想建
+        ;
 
-        if(content.length() >= 3)   // 去除""
-            content = content.substr(1, content.length() - 3);    
-        
-        if(!client[current_client_fd].is_loggin)   //還沒登入就想send
-        {
-            output_buffer = "Please login first.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
-
-        else if(find(register_user.begin(), register_user.end(), receiver_username) == register_user.end())     //send的目標不存在
-        {
-            output_buffer = "User not existed.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
+        else if(created_board.size() != 0 && find(created_board.begin(), created_board.end(), boardname) != created_board.end())   //若看板已存在
+        ;
 
         else
         {
-            receive_message[receiver_username][client[current_client_fd].current_user].content.push_back(content);
+            created_board.push_back(boardname);
+            //board_satus[boardname] = {++board_index, boardname, client[current_client_fd].current_user};
+            //輸出
         }
     }
 
-    void List_msg()     //是list出還沒讀的訊息
+    void Create_post(string boardname, string title, string content)
     {
-        if(!client[current_client_fd].is_loggin)    //還沒登入就想list-msg
-        {
-            output_buffer = "Please login first.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
+        if(content == "") //參數過少
+        ;
 
-        else if(receive_message[client[current_client_fd].current_user].size() == 0)     //沒有未讀的訊息
-        {
-            output_buffer = "Your message box is empty.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
+        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想po
+        ;
+
+        else if(created_board.size() == 0 || find(created_board.begin(), created_board.end(), boardname) == created_board.end())   //若看板不存在
+        ;
 
         else
         {
-            output_buffer = "";
-            for(auto iter = receive_message[client[current_client_fd].current_user].begin(); iter != receive_message[client[current_client_fd].current_user].end(); iter++)
-                output_buffer += to_string(iter->second.content.size() - iter->second.first_msg) + " message from " + iter->first + ".\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+            //post_status[post_sn] = {++post_sn, title, content, client[current_client_fd].current_user, "", boardname}; //date先亂給, comment沒給
+            //輸出
         }
     }
-    
-    void Receive(string sender_username)    //receive後的訊息會被刪掉
+
+    void List_board()
     {
-        if(sender_username == "")  //參數過少
+        for(int i = 0; i < board_index; i++)
+        ;
+    }
+
+    void List_post(string boardname)
+    {
+        if(boardname == "") //參數過少
+        ;
+
+        else if(created_board.size() == 0 || find(created_board.begin(), created_board.end(), boardname) == created_board.end())   //若看板不存在
+        ;
+
+        else
         {
-            output_buffer = "Usage: receive <username>\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+            for(int i = 0; i < post_status.size(); i++)
+            {
+                if(post_status[i].belong_board == boardname)
+                ;
+            }
+            
+        }
+    }
+
+    void Read(int sn)
+    {
+        if(sn == 0) //參數過少 要注意這邊是0
+        ;
+
+        else
+        {
+            
+        }
+    }
+
+    void Delete_post(int sn)
+    {
+        if(sn == 0) //參數過少 要注意這邊是0
+        ;
+
+        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想刪
+        {
+            
         }
 
-        else if(!client[current_client_fd].is_loggin)   //還沒登入就想receive
+        else if(post_status.size() == 0 || post_status.find(sn) == post_status.end())   //若post不存在
         {
-            output_buffer = "Please login first.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+
         }
-        
-        else if(find(register_user.begin(), register_user.end(), sender_username) == register_user.end())  //receive的對象不存在
+
+        else if(post_status[sn].author != client[current_client_fd].current_user) //若不是post的作者
         {
-            output_buffer = "User not existed.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+
         }
 
         else
         {
-            if(receive_message[client[current_client_fd].current_user].count(sender_username) == 0) return;    //若沒有來自他的訊息直接結束
+            post_status.erase(sn);
+        }
+    }
 
-            output_buffer = receive_message[client[current_client_fd].current_user][sender_username].content[receive_message[client[current_client_fd].current_user][sender_username].first_msg++] + "\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+    void Update_post(int sn, string update_type, string new_tilte_or_content)
+    {
+        if(new_tilte_or_content == "") //參數過少
+        ;
 
-            if(receive_message[client[current_client_fd].current_user][sender_username].content.size() == receive_message[client[current_client_fd].current_user][sender_username].first_msg)
-                receive_message[client[current_client_fd].current_user].erase(sender_username);
+        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想更新
+        {
+            
+        }
+
+        else if(post_status.find(sn) == post_status.end()) //若此post不存在
+        {
+
+        }
+
+        else if(post_status[sn].author != client[current_client_fd].current_user) //若不是post的作者
+        {
+
+        }
+
+        else
+        {
+            if(update_type == "--title") post_status[sn].title = new_tilte_or_content;
+            else if(update_type == "--content") post_status[sn].content = new_tilte_or_content;
+            //輸出
+        }
+    }
+
+    void Comment(int sn, string new_comment_content)
+    {
+        if(new_comment_content == "") //參數過少
+        ;
+
+        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想comment
+        {
+            
+        }
+
+        else if(post_status.find(sn) == post_status.end()) //若此post不存在
+        {
+
+        }
+
+        else
+        {
+            post_status[sn].comments.push_back({client[current_client_fd].current_user, new_comment_content});
+            //輸出
         }
     }
 };
@@ -387,7 +498,7 @@ int main(int argc, char **argv)
 {
     if(argc <= 1)
     {
-        cout << "Usage: ./hw1 <serverport>\n";
+        cout << "Usage: ./hw2 <serverport>\n";
         return 0;
     }
 
