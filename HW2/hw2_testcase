@@ -23,6 +23,7 @@ update-post 1 --content To win the championship, BYG can hire me from prison.
 delete-post 1
 comment 100 To win the championship, BYG can hire me from prison.
 comment 1 To win the championship, BYG can hire me from prison.
+comment 1 hahaha
 read 1
 create-board Drug
 list-board
@@ -31,4 +32,7 @@ login Maoan 123456
 delete-post 1
 read 1
 logout
+login Maoan 123456
+comment 1 hello
+read 1
 exit

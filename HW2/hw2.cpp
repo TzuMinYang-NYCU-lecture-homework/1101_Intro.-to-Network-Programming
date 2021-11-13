@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <ctime>
 
 #define LISTENQ 1024
 #define MAXLINE 4095
@@ -212,7 +213,6 @@ private:
                 content = input.substr(content_pos + 9 + 1);
                 while(content.find("<br>") != std::string::npos) 
                     content.replace(content.find("<br>"), 4, "\n");
-                content += "\n";    //最後補一個\n給它
 
                 Create_post(arg1, title, content);
             }
@@ -222,6 +222,7 @@ private:
                 content = input.substr(content_pos + 9 + 1, title_pos - (content_pos + 9 + 1));
                 while(content.find("<br>") != std::string::npos) 
                     content.replace(content.find("<br>"), 4, "\n");
+                content += "\n";    //最後補一個\n給它    
                 title = input.substr(title_pos + 7 + 1, input.length() - (title_pos + 7 + 1) - 1); //不要連最後的\n都放進去
 
                 Create_post(arg1, title, content);
@@ -239,7 +240,7 @@ private:
 
             else if(arg2 == "--title")
             {
-                title = input.substr(input.find("--title") + 7 + 1);
+                title = input.substr(input.find("--title") + 7 + 1, input.length() - (input.find("--title") + 7 + 1) - 1);
                 Update_post(strtol(arg1.c_str(), NULL, 10), arg2, title);
             }
 
@@ -274,7 +275,7 @@ private:
             register_user.push_back(username);
             user_password[username] = password;
 
-            output_buffer = "Register successfully\n";
+            output_buffer = "Register successfully.\n";
             writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
         }   
         
@@ -347,150 +348,169 @@ private:
     void Creat_board(string boardname)
     {
         if(boardname == "") //參數過少
-        ;
+            output_buffer = "Usage: create-board <name>\n";
 
-        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想建
-        ;
+        else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想建
+            output_buffer = "Please login first.\n";
 
         else if(created_board.size() != 0 && find(created_board.begin(), created_board.end(), boardname) != created_board.end())   //若看板已存在
-        ;
+            output_buffer = "Board already exists.\n";
 
         else
         {
             created_board.push_back(boardname);
-            //board_satus[boardname] = {++board_index, boardname, client[current_client_fd].current_user};
-            //輸出
+            board_satus[boardname] = {++board_index, boardname, client[current_client_fd].current_user};
+            
+            output_buffer = "Create board successfully.\n";
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void Create_post(string boardname, string title, string content)
     {
         if(content == "") //參數過少
-        ;
+            output_buffer = "Usage: create-post <board-name> --title <title> --content <content>\n";
 
-        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想po
-        ;
+        else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想po
+            output_buffer = "Please login first.\n";
 
         else if(created_board.size() == 0 || find(created_board.begin(), created_board.end(), boardname) == created_board.end())   //若看板不存在
-        ;
+            output_buffer = "Board does not exist.\n";
 
         else
         {
-            //post_status[post_sn] = {++post_sn, title, content, client[current_client_fd].current_user, "", boardname}; //date先亂給, comment沒給
-            //輸出
+            time_t now = time(0);
+            tm *ltm = localtime(&now);
+            string date = to_string(ltm -> tm_mon + 1) + "/" + to_string(ltm -> tm_mday);
+            post_status[post_sn] = {++post_sn, title, content, client[current_client_fd].current_user, date, boardname}; //date先亂給, comment沒給
+            
+            output_buffer = "Create post successfully.\n";
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void List_board()
     {
+        output_buffer = "Index    Name    Moderator\n";
         for(int i = 0; i < board_index; i++)
-        ;
+        {
+            output_buffer += to_string(board_satus[created_board[i]].index) + " " + board_satus[created_board[i]].name + " "
+                             + board_satus[created_board[i]].moderator + "\n";
+        }
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void List_post(string boardname)
     {
         if(boardname == "") //參數過少
-        ;
+            output_buffer = "Usage: list-post <board-name>\n";
 
         else if(created_board.size() == 0 || find(created_board.begin(), created_board.end(), boardname) == created_board.end())   //若看板不存在
-        ;
+            output_buffer = "Board does not exist.\n";
 
         else
         {
+            output_buffer = "S/N     Title     Author     Date\n";
             for(int i = 0; i < post_status.size(); i++)
             {
                 if(post_status[i].belong_board == boardname)
-                ;
+                    output_buffer += to_string(post_status[i].sn) + " " + post_status[i].title + " " + post_status[i].author 
+                                     + " " + post_status[i].date + "\n";
             }
-            
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void Read(int sn)
     {
         if(sn == 0) //參數過少 要注意這邊是0
-        ;
+            output_buffer = "Usage: read <post-S/N>\n";
+
+        else if(post_status.size() == 0 || post_status.find(sn) == post_status.end())   //若post不存在
+            output_buffer = "Post does not exist.\n";
 
         else
         {
-            
+            output_buffer = "Author: " + post_status[sn].author + "\nTitle: " + post_status[sn].title + "\nDate: " 
+                            + post_status[sn].date + "\n--\n" + post_status[sn].content + "--\n";       // content最後本來就有\n了
+
+            for(int i = 0; i < post_status[sn].comments.size(); i++)
+                output_buffer += post_status[sn].comments[i].author + ": " + post_status[sn].comments[i].content; // comment的content最後本來就有\n了
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void Delete_post(int sn)
     {
         if(sn == 0) //參數過少 要注意這邊是0
-        ;
+            output_buffer = "Usage: delete-post <post-S/N>\n";
 
-        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想刪
-        {
-            
-        }
+        else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想刪
+            output_buffer = "Please login first.\n";
 
         else if(post_status.size() == 0 || post_status.find(sn) == post_status.end())   //若post不存在
-        {
-
-        }
+            output_buffer = "Post does not exist.\n";
 
         else if(post_status[sn].author != client[current_client_fd].current_user) //若不是post的作者
-        {
-
-        }
+            output_buffer = "Not the post owner.\n";
 
         else
         {
             post_status.erase(sn);
+            output_buffer = "Delete successfully.\n";
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void Update_post(int sn, string update_type, string new_tilte_or_content)
     {
         if(new_tilte_or_content == "") //參數過少
-        ;
+            output_buffer = "Usage: update-post <post-S/N> --title/content <new>\n";
 
-        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想更新
-        {
-            
-        }
+        else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想更新
+            output_buffer = "Please login first.\n";
 
         else if(post_status.find(sn) == post_status.end()) //若此post不存在
-        {
-
-        }
+            output_buffer = "Post does not exist.\n";
 
         else if(post_status[sn].author != client[current_client_fd].current_user) //若不是post的作者
-        {
-
-        }
+            output_buffer = "Not the post owner.\n";
 
         else
         {
             if(update_type == "--title") post_status[sn].title = new_tilte_or_content;
             else if(update_type == "--content") post_status[sn].content = new_tilte_or_content;
-            //輸出
+            
+            output_buffer = "Update successfully.\n";
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void Comment(int sn, string new_comment_content)
     {
         if(new_comment_content == "") //參數過少
-        ;
+            output_buffer = "Usage: comment <post-S/N> <comment>\n";
 
-        else if(client.size() != 0 && !client[current_client_fd].is_loggin)  //沒登入就想comment
-        {
-            
-        }
+        else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想comment
+            output_buffer = "Please login first.\n";
 
         else if(post_status.find(sn) == post_status.end()) //若此post不存在
-        {
-
-        }
+            output_buffer = "Post does not exist.\n";
 
         else
         {
             post_status[sn].comments.push_back({client[current_client_fd].current_user, new_comment_content});
-            //輸出
+            
+            output_buffer = "Comment successfully.\n";
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 };
 
