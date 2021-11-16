@@ -202,7 +202,7 @@ private:
             register_user.push_back(username);
             user_password[username] = password;
 
-            output_buffer = "Register successfully\n";
+            output_buffer = "Register successfully.\n";
             writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
         }   
         
