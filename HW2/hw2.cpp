@@ -77,13 +77,10 @@ public:
 
                 socklen_t cli_len = sizeof(cliaddr);
                 new_cli_fd = accept(listenfd, (sockaddr *) &cliaddr, &cli_len);
-
-                FILE* new_cli_fp = fdopen(new_cli_fd, "r+");
                 client[new_cli_fd] = {"", "", false};
 
                 output_buffer = "********************************\n** Welcome to the BBS server. **\n********************************\n% ";
                 writen(new_cli_fd, output_buffer.c_str(), output_buffer.length());
-                //fprintf(new_cli_fp, "********************************\n** Welcome to the BBS server. **\n********************************\n% ");
 
                 FD_SET(new_cli_fd, &all_set);
                 if(new_cli_fd > max_fd) max_fd = new_cli_fd;
@@ -108,7 +105,6 @@ private:
     int SERV_PORT = 0;
     fd_set rset, all_set;
     int current_client_fd = -1;
-    FILE* current_client_fp = NULL;
 
     //BBS的
     vector<string> register_user;
@@ -149,11 +145,6 @@ private:
     {
         char char_input_buffer[MAXLINE + 100];
         bzero(char_input_buffer, sizeof(char_input_buffer));
-        
-        //current_client_fp = fdopen(current_client_fd, "r+");////////////////// 要改
-        
-        //if(read(current_client_fd, char_input_buffer, MAXLINE) <= 0)
-        //if(fgets(input_buffer, MAXLINE, current_client_fp) != EOF)
 
         if(read(current_client_fd, char_input_buffer, MAXLINE) <= 0)
         {
@@ -174,10 +165,11 @@ private:
             action(client[current_client_fd].input_buffer.substr(0, endline_position + 1));
 
             if(client.size() == 0 || client.count(current_client_fd) == 0) return;    // 代表已經exit
+
             output_buffer = "% ";
             writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+
             //留下換行後的
-            
             if(endline_position != client[current_client_fd].input_buffer.length() - 1)
                 client[current_client_fd].input_buffer = client[current_client_fd].input_buffer.substr(endline_position + 1);
                 
@@ -204,30 +196,36 @@ private:
         {
             string title = "", content = "";
             int title_pos = input.find("--title"), content_pos = input.find("--content");
-            if(title_pos == std::string::npos || content_pos == std::string::npos)
+
+            //找不到title或content or <title>或<content>是空的 or boardname是空的(也就是arg1 = --title或--content)
+            if(title_pos == std::string::npos || content_pos == std::string::npos || title_pos - content_pos == 10 || content_pos - title_pos == 8 || arg1.find("--") != std::string::npos)
                 Create_post(arg1, title, content);
 
             else if(arg2 == "--title")
             {
-                title = input.substr(title_pos + 7 + 1, content_pos - (title_pos + 7 + 1));
+                title = input.substr(title_pos + 7 + 1, content_pos - (title_pos + 7 + 1) - 1);
+                //+1是不要把--title後面的空白也算進去, -1是不要把--content前面的空白也算進去
+
                 content = input.substr(content_pos + 9 + 1);
                 while(content.find("<br>") != std::string::npos) 
                     content.replace(content.find("<br>"), 4, "\n");
+                //因為content是在後面的那個, 本來就會有\n了所以不用補
 
                 Create_post(arg1, title, content);
             }
 
             else if(arg2 == "--content")
             {
-                content = input.substr(content_pos + 9 + 1, title_pos - (content_pos + 9 + 1));
+                content = input.substr(content_pos + 9 + 1, title_pos - (content_pos + 9 + 1) - 1);
+                //+1是不要把--content後面的空白也算進去, -1是不要把--title前面的空白也算進去
                 while(content.find("<br>") != std::string::npos) 
                     content.replace(content.find("<br>"), 4, "\n");
-                content += "\n";    //最後補一個\n給它    
-                title = input.substr(title_pos + 7 + 1, input.length() - (title_pos + 7 + 1) - 1); //不要連最後的\n都放進去
+                content += "\n";    //因為在中間, 所以最後補一個\n給它    
+
+                title = input.substr(title_pos + 7 + 1, input.length() - (title_pos + 7 + 1) - 1); //-1是不要連最後的\n都放進去
 
                 Create_post(arg1, title, content);
             }
-            //可能有問題
         }
         else if(instr == "list-board") List_board();
         else if(instr == "list-post") List_post(arg1);
@@ -240,7 +238,7 @@ private:
 
             else if(arg2 == "--title")
             {
-                title = input.substr(input.find("--title") + 7 + 1, input.length() - (input.find("--title") + 7 + 1) - 1);
+                title = input.substr(input.find("--title") + 7 + 1, input.length() - (input.find("--title") + 7 + 1) - 1); //-1是不要連最後的\n都放進去
                 Update_post(strtol(arg1.c_str(), NULL, 10), arg2, title);
             }
 
@@ -255,6 +253,8 @@ private:
         }
         else if(instr == "comment") Comment(strtol(arg1.c_str(), NULL, 10), input.substr(input.find(arg2))) ;
     }
+
+    //hw1就有的指令
 
     void Register(string username, string password)
     {
@@ -275,7 +275,7 @@ private:
         writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
-    bool the_user_has_login(string username)
+    bool the_user_has_login(string username) //看這個user有沒有在其他client登入過了
     {
         for(auto iter = client.begin(); iter != client.end(); iter++)
             if(username == iter -> second.current_user) return true;
@@ -287,7 +287,7 @@ private:
         if(username == "" || password == "")    //參數過少
             output_buffer = "Usage: login <username> <password>\n";
         
-        else if(client.size() != 0 && (client[current_client_fd].is_loggin || the_user_has_login(username)))  //已經登入卻又要登入
+        else if(client.size() != 0 && (client[current_client_fd].is_loggin || the_user_has_login(username)))  //當前client已經登入 or 此username在別的client登入過了
             output_buffer = "Please logout first.\n";
 
         else if(find(register_user.begin(), register_user.end(), username) == register_user.end() || user_password[username] != password)   //使用者不存在或密碼錯誤
@@ -335,6 +335,8 @@ private:
         FD_CLR(current_client_fd, &all_set);
     }
 
+    //hw2新的
+
     void Creat_board(string boardname)
     {
         if(boardname == "") //參數過少
@@ -359,7 +361,7 @@ private:
 
     void Create_post(string boardname, string title, string content)
     {
-        if(content == "") //參數過少
+        if(boardname == "" || title == "" || content == "") //參數過少
             output_buffer = "Usage: create-post <board-name> --title <title> --content <content>\n";
 
         else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想po
@@ -373,7 +375,7 @@ private:
             time_t now = time(0);
             tm *ltm = localtime(&now);
             string date = to_string(ltm -> tm_mon + 1) + "/" + to_string(ltm -> tm_mday);
-            post_status[post_sn] = {++post_sn, title, content, client[current_client_fd].current_user, date, boardname}; //comment沒給
+            post_status[post_sn] = {++post_sn, title, content, client[current_client_fd].current_user, date, boardname}; //comment沒給值, 應該會自己初始化, 但不確定
             
             output_buffer = "Create post successfully.\n";
         }
@@ -383,7 +385,7 @@ private:
 
     void List_board()
     {
-        output_buffer = "Index    Name    Moderator\n";
+        output_buffer = "Index Name Moderator\n";
         for(int i = 0; i < board_index; i++)
         {
             output_buffer += to_string(board_satus[created_board[i]].index) + " " + board_satus[created_board[i]].name + " "
@@ -402,7 +404,7 @@ private:
 
         else
         {
-            output_buffer = "S/N     Title     Author     Date\n";
+            output_buffer = "S/N Title Author Date\n";
             for(int i = 0; i < post_status.size(); i++)
             {
                 if(post_status[i].belong_board == boardname)
@@ -416,7 +418,7 @@ private:
 
     void Read(int sn)
     {
-        if(sn == 0) //參數過少 要注意這邊是0
+        if(sn == 0) //參數過少, 要注意這邊是0
             output_buffer = "Usage: read <post-S/N>\n";
 
         else if(post_status.size() == 0 || post_status.find(sn) == post_status.end())   //若post不存在
@@ -459,7 +461,7 @@ private:
 
     void Update_post(int sn, string update_type, string new_tilte_or_content)
     {
-        if(new_tilte_or_content == "") //參數過少
+        if(sn == 0 || update_type == "" || new_tilte_or_content == "") //參數過少
             output_buffer = "Usage: update-post <post-S/N> --title/content <new>\n";
 
         else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想更新
@@ -484,7 +486,7 @@ private:
 
     void Comment(int sn, string new_comment_content)
     {
-        if(new_comment_content == "") //參數過少
+        if(sn == 0 || new_comment_content == "") //參數過少
             output_buffer = "Usage: comment <post-S/N> <comment>\n";
 
         else if(client.size() == 0 || !client[current_client_fd].is_loggin)  //沒登入就想comment

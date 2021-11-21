@@ -9,7 +9,7 @@
 % Board already exists.
 % Create board successfully.
 % Create board successfully.
-% Index    Name    Moderator
+% Index Name Moderator
 1 LoL Maoan
 2 3Q Maoan
 3 Meta Maoan
@@ -17,12 +17,12 @@
 % Create post successfully.
 % Create post successfully.
 % Board does not exist.
-% S/N     Title     Author     Date
-1 About My Dream  Maoan 11/21
-2 R: About My Dream  Maoan 11/21
+% S/N Title Author Date
+1 About My Dream Maoan 11/21
+2 R: About My Dream Maoan 11/21
 % Post does not exist.
 % Author: Maoan
-Title: About My Dream 
+Title: About My Dream
 Date: 11/21
 --
 Chances are high
@@ -52,7 +52,7 @@ Sylas or Orianna
 --
 Toyz: To win the championship, BYG can hire me from prison.
 % Create board successfully.
-% Index    Name    Moderator
+% Index Name Moderator
 1 LoL Maoan
 2 3Q Maoan
 3 Meta Maoan
