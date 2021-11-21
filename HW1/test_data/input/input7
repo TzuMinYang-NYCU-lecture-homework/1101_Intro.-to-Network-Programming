@@ -1,0 +1,7 @@
+register jimmy 88888888
+register zimmy 88888888
+send
+send jimmy "aaa"
+login zimmy 88888888
+send jimmy "aaa"
+send aaa "test"

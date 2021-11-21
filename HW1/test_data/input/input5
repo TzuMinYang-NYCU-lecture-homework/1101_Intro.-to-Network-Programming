@@ -1,0 +1,4 @@
+register jimmy 88888888
+whoami
+login jimmy 88888888
+whoami

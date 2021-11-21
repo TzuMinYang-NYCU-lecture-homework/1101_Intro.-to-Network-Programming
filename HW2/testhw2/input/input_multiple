@@ -1,0 +1,8 @@
+1 register Maoan 123456
+2 login Maoan 123456
+1 login Maoan 123456
+2 logout 
+1 login Maoan 123456
+1 logout
+1 exit
+2 exit

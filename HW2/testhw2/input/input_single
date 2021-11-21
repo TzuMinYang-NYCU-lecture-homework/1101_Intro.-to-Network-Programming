@@ -1,0 +1,34 @@
+1 create-board LoL
+1 register Maoan 123456
+1 register Toyz 420420
+1 login Maoan 123456
+1 create-board LoL
+1 create-board LoL
+1 create-board 3Q
+1 create-board Meta
+1 list-board
+1 create-post Gamble --title About My Dream --content Chances are high<br>Sylas or Orianna
+1 create-post LoL --title About My Dream --content Chances are high<br>Sylas or Orianna
+1 create-post LoL --title R: About My Dream --content Hey!<br>Don't buy too much!
+1 list-post Rescue_3Q
+1 list-post LoL
+1 read 100
+1 read 1
+1 update-post 100 --title This is BYG. We got his smartphone.
+1 update-post 1 --title This is BYG. We got his smartphone.
+1 read 1
+1 logout
+1 login Toyz 420420
+1 update-post 1 --content To win the championship, BYG can hire me from prison.
+1 delete-post 1
+1 comment 100 To win the championship, BYG can hire me from prison.
+1 comment 1 To win the championship, BYG can hire me from prison.
+1 read 1
+1 create-board Drug
+1 list-board
+1 logout
+1 login Maoan 123456
+1 delete-post 1
+1 read 1
+1 logout
+1 exit

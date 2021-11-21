@@ -1,0 +1,11 @@
+register jimmy 88888888
+register zimmy 88888888
+login zimmy 88888888
+send jimmy "ccc"
+send jimmy "aaa"
+send jimmy "bbb"
+logout
+login jimmy 88888888
+list-msg
+receive zimmy
+list-msg

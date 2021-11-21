@@ -1,0 +1,44 @@
+1 register user1 user1
+2 register user2 user2
+3 register user3 user3
+4 register user4 user4
+5 register user5 user5
+6 register user6 user6
+7 register user7 user7
+8 register user8 user8
+9 register user9 user9
+10 register user10 user10
+1 login user1 user1
+2 login user2 user2
+3 login user3 user3
+4 login user4 user4
+5 login user5 user5
+6 login user6 user6
+7 login user7 user7
+8 login user8 user8
+9 login user9 user9
+10 login user10 user10
+1 logout
+1 exit
+11 register user11 user11
+11 login user11 user11
+2 logout
+3 logout
+4 logout
+5 logout
+6 logout
+7 logout
+8 logout
+9 logout
+10 logout
+11 logout
+2 exit
+3 exit
+4 exit
+5 exit
+6 exit
+7 exit
+8 exit
+9 exit
+10 exit
+11 exit

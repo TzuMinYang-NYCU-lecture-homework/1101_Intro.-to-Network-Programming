@@ -259,16 +259,10 @@ private:
     void Register(string username, string password)
     {
         if(username == "" || password == "")    //參數過少
-        {
             output_buffer = "Usage: register <username> <password>\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
         
         else if(find(register_user.begin(), register_user.end(), username) != register_user.end())  //使用者已註冊又要註冊
-        {
             output_buffer = "Username is already used.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
 
         else
         {
@@ -276,59 +270,55 @@ private:
             user_password[username] = password;
 
             output_buffer = "Register successfully.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
         }   
-        
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+    }
+
+    bool the_user_has_login(string username)
+    {
+        for(auto iter = client.begin(); iter != client.end(); iter++)
+            if(username == iter -> second.current_user) return true;
+        return false;
     }
 
     void Login(string username, string password)
     {
         if(username == "" || password == "")    //參數過少
-        {
             output_buffer = "Usage: login <username> <password>\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
         
-        else if(client.size() != 0 && client[current_client_fd].is_loggin)  //已經登入卻又要登入
-        {
+        else if(client.size() != 0 && (client[current_client_fd].is_loggin || the_user_has_login(username)))  //已經登入卻又要登入
             output_buffer = "Please logout first.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
 
         else if(find(register_user.begin(), register_user.end(), username) == register_user.end() || user_password[username] != password)   //使用者不存在或密碼錯誤
-        {
             output_buffer = "Login failed.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
 
         else
         {
             client[current_client_fd].current_user = username;
             client[current_client_fd].is_loggin = true;
-            output_buffer = "Welcome, ";
-            output_buffer += username + ".\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+            output_buffer = "Welcome, " + username + ".\n";
         }
 
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
     }
 
     void Logout()
     {
         if(!client[current_client_fd].is_loggin)    //還沒登入就想登出
-        {
             output_buffer = "Please login first.\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-        }
 
         else
         {
             output_buffer = "Bye, ";
             output_buffer += client[current_client_fd].current_user + ".\n";
-            writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
-
+            
             client[current_client_fd].current_user = "";
             client[current_client_fd].is_loggin = false;
         }
+
+        writen(current_client_fd, output_buffer.c_str(), output_buffer.length());
+
     }
 
     void Exit()
@@ -383,7 +373,7 @@ private:
             time_t now = time(0);
             tm *ltm = localtime(&now);
             string date = to_string(ltm -> tm_mon + 1) + "/" + to_string(ltm -> tm_mday);
-            post_status[post_sn] = {++post_sn, title, content, client[current_client_fd].current_user, date, boardname}; //date先亂給, comment沒給
+            post_status[post_sn] = {++post_sn, title, content, client[current_client_fd].current_user, date, boardname}; //comment沒給
             
             output_buffer = "Create post successfully.\n";
         }
