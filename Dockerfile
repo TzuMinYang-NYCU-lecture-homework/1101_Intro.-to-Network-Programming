@@ -8,6 +8,9 @@ RUN apt-get install -y openssh-server sudo vim grep gawk rsync tmux man manpages
 RUN apt-get install -y gcc gcc-multilib g++ g++-multilib gdb make yasm nasm tcpdump libcapstone-dev python3
 RUN apt-get install -y libc6-dbg dpkg-dev
 RUN apt-get install -y curl git zsh
+
+
+
 #RUN apt-get install -y qemu-user-static gcc-mips64-linux-gnuabi64
 #RUN apt-get install -y musl
 #RUN ln -s /lib/x86_64-linux-musl/libc.so /usr/lib/libc.musl-x86_64.so.1
