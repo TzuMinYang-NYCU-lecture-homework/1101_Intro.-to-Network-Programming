@@ -26,8 +26,8 @@ class TEST_TOOL:
             return f'python3 client.py {self.port}'
 
         BASIC_CASES = ['1-register', '2-login', '3-logout', '4-exit',
-                       '5-enter-chat-room', '6-chat', '7-filter-and-blacklist']
-        BASIC_POINTS = [5, 5, 5, 5, 10, 10, 10]
+                       '5-enter-chat-room', '6-chat', '7-filter-and-blacklist', '8']
+        BASIC_POINTS = [5, 5, 5, 5, 10, 10, 10, 1]
         BASIC_FOLDER = './basic'
         BASIC_TITLE = 'BASIC TEST CASES'
 
