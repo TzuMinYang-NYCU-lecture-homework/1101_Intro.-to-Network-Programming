@@ -1,0 +1,17 @@
+2
+1 register kirito 20070930
+1 login kirito 20070930
+1 enter-chat-room 8763 1
+1 chat Hold 10 seconds!!!
+1 chat Starburst Stream
+1 logout
+1 login kirito 20070930
+1 enter-chat-room 8763 1
+1  chat Starburst Stream?????
+1 chat Starburst Stream!!!???
+1 login kirito 20070930
+1 exit
+2 register klein klein
+2 login klein klein
+2 enter-chat-room 12345 2
+2 exit

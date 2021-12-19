@@ -1,0 +1,15 @@
+********************************
+** Welcome to the BBS server. **
+********************************
+% Register successfully.
+% Welcome, t.
+% Welcome to public chat room.
+Port:12345
+Version:1
+% t:hello w**ld
+% Welcome to public chat room.
+Port:23456
+Version:2
+t:hello w**ld
+% t:hello
+% Bye, t.

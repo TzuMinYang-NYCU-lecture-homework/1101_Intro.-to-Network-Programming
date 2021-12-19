@@ -1,0 +1,8 @@
+1
+1 register t t
+1 login t t
+1 enter-chat-room 12345 1
+1 chat hello world
+1 enter-chat-room 23456 2
+1 chat hello
+1 exit

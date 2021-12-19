@@ -1,20 +1,16 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <strings.h>
 #include <unistd.h>
-#include <iostream>
 #include <sstream>
 #include <vector>
 #include <map>
-#include <algorithm>
-#include <ctime>
 #include <error.h>
 #include <cstring>
-#include <string.h>
+#include <string>
 
 #define LISTENQ 1024
 #define MAXLINE 4095
-#define UDP_MAX 2000
+#define UDP_MAX 2000    // UDP封包一個name或msg的最大長度
 
 using namespace std;
 
@@ -58,11 +54,11 @@ public:
 
     void multiple_user_server()
     {
-        // error的部分是HW3時我自己想新增的
+        // error的部分是HW3時我自己想新增的，其實可以不用
         if ((tcplistenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
             perror("tcp socket failed");
 
-        // !!!設定TCP SO_REUSEADDR HW3新增
+        // 設定TCP SO_REUSEADDR，HW3新增
         int enable = 1;
         if (setsockopt(tcplistenfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
             perror("setsockopt(SO_REUSEADDR) failed");
@@ -100,7 +96,7 @@ public:
             if ((ready_sock_num = select(max_fd + 1, &rset, NULL, NULL, NULL)) < 0)
                 perror("select failed");
 
-            if(FD_ISSET(tcplistenfd, &rset))
+            if(FD_ISSET(tcplistenfd, &rset))    //tcplistenfd可讀寫
             {
                 ready_sock_num--;
 
@@ -108,9 +104,6 @@ public:
                 if ((new_cli_fd = accept(tcplistenfd, (sockaddr *) &tcp_cliaddr, &clilen)) < 0)
                     perror("accept failed");
                 
-                // !!! 有改
-                //client_fd_to_port.insert({new_cli_fd, cliaddr.sin_port});
-                //client.insert({cliaddr.sin_port, {"", "", false, -1, -1}});
                 client[new_cli_fd] = {"", "", false, -1, -1};
 
                 output_buffer = "********************************\n** Welcome to the BBS server. **\n********************************\n% ";
@@ -120,7 +113,7 @@ public:
                 if(new_cli_fd > max_fd) max_fd = new_cli_fd;
             }
 
-            if(FD_ISSET(udpfd, &rset))
+            if(FD_ISSET(udpfd, &rset))  //udpfd可讀寫
             {
                 ready_sock_num--;
                 current_client_tcp_fd = -1;
@@ -132,7 +125,7 @@ public:
             {
                 if(ready_sock_num <= 0) break;
 
-                if(FD_ISSET(i, &rset) && client.count(i) != 0)
+                if(FD_ISSET(i, &rset) && client.count(i) != 0)  //tcp fd可讀寫(client的index是tcp fd)
                 {
                     ready_sock_num--;
                     current_client_tcp_fd = i;
@@ -229,7 +222,7 @@ private:
     
     }
 
-    void tcp_action(string input)
+    void tcp_action(string input)   //parse input，決定要做什麼
     {
         stringstream ss(input);
         string instr = "", arg1 = "", arg2 = "", arg3 = "";
@@ -266,13 +259,13 @@ private:
         if(username == "" || password == "" || garbage != "")    //參數過少或過多
             output_buffer = "Usage: login <username> <password>\n";
         
-        else if(client[current_client_tcp_fd].is_login || (user.count(username) != 0 && user[username].is_login))  //當前client已經登入 or 此username在別的client登入過了
+        else if(client[current_client_tcp_fd].is_login || (user.count(username) != 0 && user[username].is_login))  //當前client已經登入 or 此username在別的client登入過了，記得要先確定這個username存在，不然會自己建出一個被初始化的element
             output_buffer = "Please logout first.\n";
 
         else if(user.count(username) == 0)   //使用者不存在
             output_buffer = "Login failed.\n";
 
-        else if(user[username].violation_num >= 3)   // !!!使用者在blacklist中
+        else if(user[username].violation_num >= 3)   // 使用者在blacklist中
             output_buffer = "We don't welcome " + username + "!\n";
 
         else if(user[username].password != password) //密碼錯誤
@@ -313,7 +306,7 @@ private:
 
     }
 
-    void Exit(string garbage)//!!!要改
+    void Exit(string garbage)
     {
         if(garbage != "")    //參數過多
         {
@@ -323,7 +316,7 @@ private:
 
         else
         {
-            if(client[current_client_tcp_fd].is_login)     //若已登入要exit就先跟他說Bye
+            if(client[current_client_tcp_fd].is_login)     //若已登入要exit就把他登出然後跟他說Bye
             {
                 user[client[current_client_tcp_fd].username].is_login = false;
 
@@ -339,17 +332,17 @@ private:
 
     //hw3新增
 
-    void Enter_chat_room(string str_port, string str_version, string garbage)//!!!同時有數字和非數字的情況
+    void Enter_chat_room(string str_port, string str_version, string garbage)
     {
         int port = strtol(str_port.c_str(), NULL, 10), version = strtol(str_version.c_str(), NULL, 10);  //後面要用比較方便
 
         if(str_port == "" || str_version == "" || garbage != "")    //參數過少或過多
             output_buffer = "Usage: enter-chat-room <port> <version>\n";
         
-        else if(!is_num(str_port) || port < 1 || port > 65535)  //!!!port不是數字，或port不在[1,65535]
+        else if(!is_num(str_port) || port < 1 || port > 65535)  //port不是數字，或port不在[1,65535]
             output_buffer = "Port " + str_port + " is not valid.\n";
 
-        else if(!is_num(str_version) || (version != 1 && version != 2))   //!!!version不是數字，或version不是1也不是2
+        else if(!is_num(str_version) || (version != 1 && version != 2))   //version不是數字，或version不是1也不是2
             output_buffer = "Version " + str_version + " is not supported.\n";
 
         else if(!client[current_client_tcp_fd].is_login)   //還沒登入就想進聊天室
@@ -357,9 +350,10 @@ private:
 
         else
         {
-            output_buffer = "Welcome to public chat room.\nPort:" + str_port + "\nVersion:" + str_version + "\n";
+           output_buffer = "Welcome to public chat room.\nPort:" + str_port + "\nVersion:" + str_version + "\n";
             for(auto &msg: chat_history)    //把history串起來
                 output_buffer += msg.sender + ":" + msg.message + "\n";
+                
             client[current_client_tcp_fd].udp_port = port;
             client[current_client_tcp_fd].version = version;
         }
@@ -367,7 +361,7 @@ private:
         writen(current_client_tcp_fd, output_buffer.c_str(), output_buffer.length());
     }
 
-    bool is_num(string str)
+    bool is_num(string str) //檢查str是不是全部都是數字
     {
         for(int i = 0; i < str.length(); i++)
             if(!(str.at(i) >= '0' && str.at(i) <= '9'))
@@ -382,7 +376,7 @@ private:
             perror("recvfrom failed");
 
         string username = "", message = "";
-        parse_chat_packet(&username, &message);
+        if(parse_chat_packet(&username, &message) == false) return; //若收到flag!=1或version!=1也!=2的封包就無視他
         
         for(auto iter = client.begin(); iter != client.end(); iter++)   //找此udp port對應client的tcp fd
         {
@@ -393,7 +387,7 @@ private:
             }
         }
 
-        bool is_violated = false;
+        bool is_violated = false;   //一個message只會紀錄一次違規
 
         for(auto iter = filtering_list.begin(); iter != filtering_list.end(); iter++)   //replace全部的出現的違規的字串
         {
@@ -406,12 +400,8 @@ private:
 
         if(is_violated && ++user[username].violation_num >= 3)  //若違規超過三次就把他登出
         {
-            user[username].is_login = false;
-            client[current_client_tcp_fd].is_login = false;
-            client[current_client_tcp_fd].udp_port = -1;
-            client[current_client_tcp_fd].version = -1;
-
-            output_buffer = "Bye, " + username + ".\n% ";   //要記得自己補送%，這個情況比較特別
+            Logout("");
+            output_buffer = "% ";   //要記得自己補送%，這個情況比較特別
             writen(current_client_tcp_fd, output_buffer.c_str(), output_buffer.length());
         }
 
@@ -423,12 +413,12 @@ private:
 
     }
 
-    void parse_chat_packet(string *name, string *message)   // 解析UDP封包
+    bool parse_chat_packet(string *name, string *message)   // 解析UDP封包，非規定內容的封包就return false
     {
         struct udp_flag_and_ver *ptr_flag_and_ver = (struct udp_flag_and_ver*) char_input_buffer;
         char flag = *((char *)ptr_flag_and_ver), version = *((char *)ptr_flag_and_ver + 1);
 
-        if(flag != '\1') return;
+        if(flag != '\1') return false;
 
         if(version == '\1')
         {
@@ -450,7 +440,6 @@ private:
 
         else if(version == '\2')
         {
-            cout << "I'm in\n";
             char *name_beg = char_input_buffer + 2, *name_end = strstr(name_beg, "\n");
             *name_end = '\0';
             *name = base64_decode(name_beg);
@@ -459,14 +448,18 @@ private:
             *msg_end = '\0';
             *message = base64_decode(msg_beg);
         }
+
+        else return false;
+
+        return true;
     }
 
-    void send_chat_packet(int recever_udp_port, string sender, string message)  //送出UDP封包
+    void send_chat_packet(int recever_udp_port, string sender, string message)  //送出UDP封包，助教有給範例
     {
         char buf[4096];
         bzero(buf, 4096);
 
-        bzero(&udp_cliaddr, sizeof(udp_cliaddr));
+        //填cliaddr
         udp_cliaddr.sin_family = AF_INET;
         inet_pton(AF_INET, "127.0.0.1", &udp_cliaddr.sin_addr);
         udp_cliaddr.sin_port = htons(recever_udp_port);
@@ -496,7 +489,7 @@ private:
         }
     }
 
-    string base64_encode(string encode_str)
+    string base64_encode(string encode_str) //3個字一組encode成4個字
     {
         string result_str = "";
         char encode_char[4], decode_char[5];
@@ -511,7 +504,7 @@ private:
                 decode_char[1] = base64_dic.at(((encode_char[0] & 0b00000011) << 4) + ((encode_char[1] & 0b11110000) >> 4));
                 decode_char[2] = base64_dic.at(((encode_char[1] & 0b00001111) << 2) + ((encode_char[2] & 0b11000000) >> 6));
                 decode_char[3] = base64_dic.at((encode_char[2] & 0b00111111));
-                decode_char[4] = '\0';
+                decode_char[4] = '\0';  //記得最後面都要補\0
                 result_str += decode_char;
             }
         }
@@ -545,10 +538,9 @@ private:
         return result_str;
     }
 
-    string base64_decode(char *beg)
+    string base64_decode(char *beg) //4個字一組decode成3個字
     {
-        string decode_str = beg;
-        string result_str = "";
+        string decode_str = beg, result_str = "";
         char encode_char[4], decode_char[5];
         int decode_len = decode_str.length(), equal_pos = -1;
 
@@ -597,7 +589,7 @@ int main(int argc, char **argv)
 {
     if(argc <= 1)
     {
-        cout << "Usage: ./hw3 <serverport>\n";
+        printf("Usage: ./hw3 <serverport>\n");
         return 0;
     }
 

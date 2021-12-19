@@ -1,0 +1,14 @@
+2
+1 register unknown TA
+1 login unknown TA
+1 enter-chat-room 12345 1
+1 chat hey, siri!
+2 register siri siri
+2 login siri siri
+2 enter-chat-room 23456 2
+2 chat What can I help you with?
+1 chat Who is the best Taiwan vtuber?
+2 chat Mochikomame
+1 chat wo hao xing fen!!!!
+1 exit
+2 exit

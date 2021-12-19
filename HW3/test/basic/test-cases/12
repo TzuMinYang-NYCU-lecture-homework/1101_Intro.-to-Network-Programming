@@ -1,0 +1,13 @@
+2
+1 register TA1 TA1
+1 login TA1 TA1
+2 register TA1 TA1
+2 register TA2 TA2
+2 login TA2 TA2
+2 enter-chat-room 12334 1
+2 chat one
+2 chat two
+2 chat three
+1 enter-chat-room 12345 2
+1 exit
+2 exit
