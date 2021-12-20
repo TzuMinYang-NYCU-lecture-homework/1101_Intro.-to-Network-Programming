@@ -309,3 +309,4 @@ Temporary Items
                           
 .data/home/sam1248105
 *.zip
+.fuse_hidden*
