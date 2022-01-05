@@ -28,12 +28,14 @@ pos beg_, end_;
 char input_buffer[MAXLINE + 100];
 string str_input_buffer = "";
 
-struct sockaddr lookup_udp(const char *hostname, const char *service) {
-    struct addrinfo hint, *res = NULL;
+struct sockaddr lookup_tcp(const char *hostname, const char *service) {
+    struct addrinfo hint, *res = nullptr;
 
     bzero(&hint, sizeof(hint));
-    hint.ai_flags = AI_CANONNAME;
-    hint.ai_socktype = SOCK_DGRAM;
+    //註解的寫不寫都對, socktype填SOCK_DGRAM也會對, 註解掉也會對
+    //hint.ai_flags = AI_CANONNAME;
+    hint.ai_family = AF_INET;
+    hint.ai_socktype = SOCK_STREAM;
 
     getaddrinfo(hostname, service, &hint, &res);
     return res -> ai_addr[0];
@@ -145,7 +147,7 @@ int main(int argc, char *argv[])
     }
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr servaddr = lookup_udp(argv[1], argv[2]);
+    struct sockaddr servaddr = lookup_tcp(argv[1], argv[2]);
     connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
 
 
